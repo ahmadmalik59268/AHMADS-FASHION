@@ -29,23 +29,37 @@ export interface DbOrderPayload {
 }
 
 /**
- * Custom Products Storage Helpers
+ * Generic Local & Persistent Storage Helpers
  */
-export function getStoredCustomProducts(): Product[] {
+export function getStoredData<T>(key: string, defaultValue: T): T {
   try {
-    const saved = localStorage.getItem('ahmads_custom_products');
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window === 'undefined') return defaultValue;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
   } catch {
-    return [];
+    return defaultValue;
   }
 }
 
-export function saveStoredCustomProducts(products: Product[]): void {
+export function saveStoredData<T>(key: string, data: T): void {
   try {
-    localStorage.setItem('ahmads_custom_products', JSON.stringify(products));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
   } catch {
     // safe fallback
   }
+}
+
+/**
+ * Custom Products Storage Helpers
+ */
+export function getStoredCustomProducts(): Product[] {
+  return getStoredData<Product[]>('ahmads_custom_products', []);
+}
+
+export function saveStoredCustomProducts(products: Product[]): void {
+  saveStoredData('ahmads_custom_products', products);
 }
 
 /**
@@ -276,6 +290,50 @@ export async function syncCartToSupabase(userId: string, items: CartItem[]): Pro
 export async function submitOrderToSupabase(payload: DbOrderPayload): Promise<{ orderNumber: string; error?: string }> {
   try {
     const orderNumber = `AHM-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    // Instant Local Storage Persistence for Admin Panel
+    try {
+      const existingOrders = getStoredData<any[]>('ahmads_orders', []);
+      const localOrderObj = {
+        id: `ord-${Date.now()}`,
+        orderNumber,
+        customerName: payload.customerName,
+        customerEmail: payload.customerEmail,
+        customerPhone: payload.customerPhone,
+        shippingAddress: payload.shippingAddress.address,
+        city: payload.shippingAddress.city || 'Pakistan',
+        country: payload.shippingAddress.country || 'Pakistan',
+        items: payload.items.map((it) => ({
+          productId: it.productId,
+          productName: it.product.name,
+          productCode: it.product.code,
+          image: it.product.images[0] || '',
+          selectedType: it.selectedType,
+          selectedSize: it.selectedSize || 'M',
+          sleeveLining: it.sleeveLining,
+          quantity: it.quantity,
+          unitPrice: it.unitPrice,
+        })),
+        subtotal: payload.subtotal,
+        discountAmount: payload.discountAmount,
+        shippingFee: payload.shippingFee,
+        totalAmount: payload.totalAmount,
+        paymentMethod:
+          payload.paymentMethod === 'Card'
+            ? 'card'
+            : payload.paymentMethod === 'Bank Transfer'
+            ? 'bank_transfer'
+            : 'cod',
+        paymentStatus: 'Pending',
+        orderStatus: 'Pending',
+        orderNotes: payload.specialInstructions || '',
+        createdAt: new Date().toLocaleDateString(),
+        updatedAt: new Date().toLocaleDateString(),
+      };
+      saveStoredData('ahmads_orders', [localOrderObj, ...existingOrders]);
+    } catch {
+      // safe fallback
+    }
 
     if (!isSupabaseConfigured) {
       return { orderNumber };

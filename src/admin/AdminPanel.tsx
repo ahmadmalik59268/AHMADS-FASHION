@@ -59,7 +59,7 @@ import {
 } from './mockData';
 
 import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products';
-import { fetchLiveProducts, saveStoredCustomProducts } from '../lib/storeService';
+import { fetchLiveProducts, saveStoredCustomProducts, getStoredData, saveStoredData } from '../lib/storeService';
 import {
   AdminUser,
   AdminOrder,
@@ -91,17 +91,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onReturnToStore, onProdu
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
-  // Data State
+  // Data State with Unified Persistence
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState<AdminCategory[]>(INITIAL_CATEGORIES);
-  const [orders, setOrders] = useState<AdminOrder[]>(INITIAL_ORDERS);
+  const [categories, setCategories] = useState<AdminCategory[]>(() =>
+    getStoredData<AdminCategory[]>('ahmads_categories', INITIAL_CATEGORIES)
+  );
+  const [orders, setOrders] = useState<AdminOrder[]>(() =>
+    getStoredData<AdminOrder[]>('ahmads_orders', INITIAL_ORDERS)
+  );
   const [customers, setCustomers] = useState<AdminCustomer[]>(INITIAL_CUSTOMERS);
   const [inventory, setInventory] = useState<AdminInventoryItem[]>(INITIAL_INVENTORY);
   const [stockLogs, setStockLogs] = useState<StockHistoryLog[]>(INITIAL_STOCK_LOGS);
-  const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
-  const [banners, setBanners] = useState<StoreBanner[]>(INITIAL_BANNERS);
+  const [coupons, setCoupons] = useState<Coupon[]>(() =>
+    getStoredData<Coupon[]>('ahmads_coupons', INITIAL_COUPONS)
+  );
+  const [banners, setBanners] = useState<StoreBanner[]>(() =>
+    getStoredData<StoreBanner[]>('ahmads_banners', INITIAL_BANNERS)
+  );
   const [payments, setPayments] = useState<PaymentTransaction[]>(INITIAL_PAYMENTS);
-  const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
+  const [settings, setSettings] = useState<StoreSettings>(() =>
+    getStoredData<StoreSettings>('ahmads_settings', INITIAL_SETTINGS)
+  );
 
   // Selected Order for Modal
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<AdminOrder | null>(null);
@@ -411,22 +421,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onReturnToStore, onProdu
       id: `cat-${Date.now()}`,
       productCount: 0,
     };
-    setCategories((prev) => [...prev, newCat]);
+    setCategories((prev) => {
+      const next = [...prev, newCat];
+      saveStoredData('ahmads_categories', next);
+      return next;
+    });
   };
 
   const handleEditCategory = (updated: AdminCategory) => {
-    setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    setCategories((prev) => {
+      const next = prev.map((c) => (c.id === updated.id ? updated : c));
+      saveStoredData('ahmads_categories', next);
+      return next;
+    });
   };
 
   const handleDeleteCategory = (id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    setCategories((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      saveStoredData('ahmads_categories', next);
+      return next;
+    });
   };
 
   // ORDER ACTIONS
   const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, orderStatus: status, updatedAt: 'Just now' } : o))
-    );
+    setOrders((prev) => {
+      const next = prev.map((o) => (o.id === orderId ? { ...o, orderStatus: status, updatedAt: 'Just now' } : o));
+      saveStoredData('ahmads_orders', next);
+      return next;
+    });
     try {
       await supabase.from('orders').update({ order_status: status }).eq('id', orderId);
     } catch (err) {
@@ -435,13 +459,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onReturnToStore, onProdu
   };
 
   const handleUpdatePaymentStatus = async (orderIdOrTxnId: string, status: PaymentStatus) => {
-    setOrders((prev) =>
-      prev.map((o) =>
+    setOrders((prev) => {
+      const next = prev.map((o) =>
         o.id === orderIdOrTxnId || o.orderNumber === orderIdOrTxnId
           ? { ...o, paymentStatus: status, updatedAt: 'Just now' }
           : o
-      )
-    );
+      );
+      saveStoredData('ahmads_orders', next);
+      return next;
+    });
     setPayments((prev) =>
       prev.map((p) => (p.id === orderIdOrTxnId ? { ...p, paymentStatus: status } : p))
     );
@@ -512,24 +538,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onReturnToStore, onProdu
       id: `cpn-${Date.now()}`,
       usedCount: 0,
     };
-    setCoupons((prev) => [...prev, newCoupon]);
+    setCoupons((prev) => {
+      const next = [...prev, newCoupon];
+      saveStoredData('ahmads_coupons', next);
+      return next;
+    });
   };
 
   const handleEditCoupon = (updated: Coupon) => {
-    setCoupons((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    setCoupons((prev) => {
+      const next = prev.map((c) => (c.id === updated.id ? updated : c));
+      saveStoredData('ahmads_coupons', next);
+      return next;
+    });
   };
 
   const handleDeleteCoupon = (id: string) => {
-    setCoupons((prev) => prev.filter((c) => c.id !== id));
+    setCoupons((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      saveStoredData('ahmads_coupons', next);
+      return next;
+    });
   };
 
   // BANNER & SETTINGS ACTIONS
   const handleUpdateBanner = (banner: StoreBanner) => {
-    setBanners((prev) => prev.map((b) => (b.id === banner.id ? banner : b)));
+    setBanners((prev) => {
+      const next = prev.map((b) => (b.id === banner.id ? banner : b));
+      saveStoredData('ahmads_banners', next);
+      return next;
+    });
   };
 
   const handleUpdateSettings = (updated: StoreSettings) => {
     setSettings(updated);
+    saveStoredData('ahmads_settings', updated);
   };
 
   const handleUpdateAdminProfile = (updated: Partial<AdminUser>) => {

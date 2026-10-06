@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 
+import bannerNoirLuxury from '../assets/images/hero_banner_noir_luxury.jpg';
+import bannerAarzu from '../assets/images/hero_banner_aarzu.jpg';
+import bannerBekhudi from '../assets/images/hero_banner_bekhudi.jpg';
+
 interface HeroSlide {
   id: string;
   image: string;
@@ -13,21 +17,21 @@ interface HeroSlide {
 const HERO_SLIDES: HeroSlide[] = [
   {
     id: 'banner-noir-luxury',
-    image: '/src/assets/images/hero_banner_noir_luxury.jpg',
+    image: bannerNoirLuxury,
     title: 'NOIR LUXURY',
     label: '01 / NOIR LUXURY',
     collectionKey: 'noir-luxury',
   },
   {
     id: 'banner-aarzu',
-    image: '/src/assets/images/hero_banner_aarzu.jpg',
+    image: bannerAarzu,
     title: 'AARZU',
     label: '02 / AARZU',
     collectionKey: 'noir-luxury',
   },
   {
     id: 'banner-bekhudi',
-    image: '/src/assets/images/hero_banner_bekhudi.jpg',
+    image: bannerBekhudi,
     title: 'BEKHUDI',
     label: '03 / BEKHUDI',
     collectionKey: 'luxury-formals',
@@ -127,7 +131,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onSelectCollection }) =>
           <img
             src={activeSlide.image}
             alt={activeSlide.title}
-            referrerPolicy="no-referrer"
             className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.015]"
           />
         </motion.div>
